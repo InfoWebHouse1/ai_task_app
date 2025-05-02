@@ -14,12 +14,6 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
-  TextEditingController titleController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-
-  FocusNode titleFocusNode = FocusNode();
-  FocusNode descriptionFocusNode = FocusNode();
-
   @override
   void initState() {
     super.initState();
@@ -33,12 +27,21 @@ class _TaskScreenState extends State<TaskScreen> {
       body: ValueListenableBuilder<Box<TaskModel>>(
         valueListenable: Boxes.getTaskData().listenable(),
         builder: (context, box, _) {
+          final data = box.values.toList().cast<TaskModel>();
+          debugPrint("TASK COUNT: ${data.length}");
+          for (var t in data) {
+            debugPrint("Title: ${t.taskTitle}, Description: ${t.taskDescription}, Date: ${t.taskDate}");
+          }
+
+          if (data.isEmpty) {
+            return const Center(child: Text("No tasks found."));
+          }
+
           return ListView.builder(
             shrinkWrap: true,
             reverse: true,
-            itemCount: box.length,
+            itemCount: data.length,
             itemBuilder: (context, index) {
-              var data = box.values.toList().cast<TaskModel>();
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 child: Card(
@@ -46,12 +49,13 @@ class _TaskScreenState extends State<TaskScreen> {
                     padding: const EdgeInsets.all(10.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text(data[index].taskTitle!, style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary,)),
-                        Text(data[index].taskDescription!, style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.secondary)),
-                        Text(DateFormat('yyyy-MM-dd – kk:mm').format(data[index].taskDate!), style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200))),
-                        //Create a task titled ‘Team Meeting’ at 8:50 PM on December 5th, 2025.
+                        Text(data[index].taskTitle ?? "No Title", style: Theme.of(context).textTheme.titleLarge!.copyWith(color: Theme.of(context).colorScheme.primary)),
+                        Text(data[index].taskDescription ?? "No Description", style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).colorScheme.secondary)),
+                        Text(
+                          DateFormat('yyyy-MM-dd – kk:mm').format(data[index].taskDate!),
+                          style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(200)),
+                        ),
                       ],
                     ),
                   ),
@@ -64,7 +68,7 @@ class _TaskScreenState extends State<TaskScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Consumer<TaskViewModel>(
         builder: (context, consumer, child) {
-          return FloatingActionButton(onPressed: consumer.isListening ? null : consumer.listeningCommand, child: Icon(consumer.isListening == false ? Icons.mic_off : Icons.mic));
+          return FloatingActionButton(onPressed: consumer.isListening ? null : consumer.listeningCommand, child: Icon(consumer.isListening ? Icons.mic_off : Icons.mic));
         },
       ),
     );

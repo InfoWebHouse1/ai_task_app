@@ -11,7 +11,12 @@ class NetworkApiService extends BaseApiServices {
   Future postApiResponse(String url, {dynamic data, headers}) async {
     dynamic responseJson;
     try {
-      http.Response response = await http.post(Uri.parse(url), body: data, headers: headers);
+      final encodedData = jsonEncode(data);
+      http.Response response = await http.post(
+        Uri.parse(url),
+        body: encodedData,
+        headers: headers ?? {'Content-Type': 'application/json'},
+      );
       responseJson = returnResponse(response);
     } on SocketException {
       Constants.toastMessage("No Internet Connection");
@@ -24,13 +29,35 @@ class NetworkApiService extends BaseApiServices {
   dynamic returnResponse(http.Response response) {
     switch (response.statusCode) {
       case 200:
-        dynamic responseJson200 = json.decode(response.body);
-        final rawText = responseJson200['candidates'][0]['content']['parts'][0]['text'];
+        dynamic responseJson = json.decode(response.body);
+        String rawText = responseJson['candidates'][0]['content']['parts'][0]['text'];
+
+        rawText = rawText.trim();
+        if (rawText.startsWith("```json")) {
+          rawText = rawText.replaceFirst("```json", "").trim();
+        }
+        if (rawText.startsWith("```")) {
+          rawText = rawText.replaceFirst("```", "").trim();
+        }
+        if (rawText.endsWith("```")) {
+          rawText = rawText.substring(0, rawText.length - 3).trim();
+        }
+
         return jsonDecode(rawText);
-      case 201:
-        dynamic responseJson201 = json.decode(response.body);
-        final rawText = responseJson201['candidates'][0]['content']['parts'][0]['text'];
-        return jsonDecode(rawText);
+      case 201:dynamic responseJson = json.decode(response.body);
+      String rawText = responseJson['candidates'][0]['content']['parts'][0]['text'];
+      rawText = rawText.trim();
+      if (rawText.startsWith("```json")) {
+        rawText = rawText.replaceFirst("```json", "").trim();
+      }
+      if (rawText.startsWith("```")) {
+        rawText = rawText.replaceFirst("```", "").trim();
+      }
+      if (rawText.endsWith("```")) {
+        rawText = rawText.substring(0, rawText.length - 3).trim();
+      }
+
+      return jsonDecode(rawText);
       case 400:
         throw BadRequestException("${response.reasonPhrase} with status code ${response.statusCode}");
       case 500:

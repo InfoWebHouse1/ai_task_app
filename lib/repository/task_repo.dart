@@ -8,7 +8,7 @@ class TaskRepository {
   Future<dynamic> geminiTextToGenApi(String command) async {
     try {
       dynamic response = await _apiServices.postApiResponse(
-        AppUrls.baseGeminiTextApiURl,
+        "${AppUrls.baseGeminiTextApiURl}${AppUrls.geminiApiKey}",
         data: {
           "contents": [
             {
@@ -18,7 +18,7 @@ class TaskRepository {
             },
           ],
         },
-        headers: {'Content-Type: application/json'},
+        headers: {"Content-Type": "application/json"},
       );
 
       return response;

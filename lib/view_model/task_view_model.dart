@@ -44,28 +44,50 @@ class TaskViewModel extends ChangeNotifier {
   }
 
   Future<void> _handleVoiceCommand(String command) async {
+    debugPrint("Voice Command Received: $command");
     final response = await _taskRepo.geminiTextToGenApi(command);
     if (response == null) return;
 
-    final action = response["action"];
+    final action = response["action"]?.toLowerCase();
     final title = response["title"];
     final description = response["description"];
     final datetimeStr = response["datetime"];
     final dateTime = DateTime.tryParse(datetimeStr ?? '');
 
-    if (action == "create" && dateTime != null) {
-      final data = TaskModel(taskTitle: title, taskDescription: description, taskDate: dateTime);
-      final box = Boxes.getTaskData();
-      box.add(data);
-      data.save();
-    } else if (action == "update" && dateTime != null) {
-      taskModel.taskTitle = title;
-      taskModel.taskDescription = description;
-      taskModel.taskDate = dateTime;
-      taskModel.save();
-    } else if (action == "delete" && taskModel.taskTitle == title) {
-      taskModel.delete();
+    final box = Boxes.getTaskData();
+
+    switch (action) {
+      case "create":
+        if (title != null && dateTime != null) {
+          final newTask = TaskModel(taskTitle: title, taskDescription: description ?? '', taskDate: dateTime);
+          box.add(newTask);
+          newTask.save();
+        }
+        break;
+
+      case "update":
+        final existingTask = box.values.firstWhere((task) => task.taskTitle?.toLowerCase() == title?.toLowerCase(), orElse: () => TaskModel());
+
+        if (existingTask.taskTitle != null && dateTime != null) {
+          existingTask.taskTitle = title;
+          existingTask.taskDescription = description ?? '';
+          existingTask.taskDate = dateTime;
+          existingTask.save();
+        }
+        break;
+
+      case "delete":
+        final taskToDelete = box.values.firstWhere((task) => task.taskTitle?.toLowerCase() == title?.toLowerCase(), orElse: () => TaskModel());
+
+        if (taskToDelete.taskTitle != null) {
+          taskToDelete.delete();
+        }
+        break;
+
+      default:
+        debugPrint("Unrecognized action: $action");
     }
+
     notifyListeners();
   }
 }
